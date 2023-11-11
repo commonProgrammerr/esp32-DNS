@@ -1,6 +1,6 @@
 
 #include <Arduino.h>
-#include "rgb.h"
+#include "routineTest.h"
 // #include "Freenove_WS2812_Lib_for_ESP32.h"
 /*
 - implementar led de status + buzzer
@@ -23,13 +23,36 @@
 void setup()
 {
    Serial.begin(115200);
-   SETUP_RGB();
+   SETUP_RGB(255);
+   pinMode(flushButton, INPUT_PULLUP);
+
+   for (int i = 0; i < 4; i++)
+   {
+      pinMode(pinInDryContact[i], INPUT);
+      pinMode(pinInWetContact[i], INPUT);
+      pinMode(tests_buttons[i], INPUT_PULLUP);
+      pinMode(pump[i], OUTPUT);
+   }
+   testRoutineInOut(true);
 }
 
 void loop()
 {
-   RGB_COLOR(RGB_WHITE);
-   delay(1000);
-   RGB_OFF();
+   for (int i = 0; i < 5; i++)
+   {
+      Serial.print("Button");
+      Serial.print(i + 1);
+      if (digitalRead(tests_buttons[i]) == LOW)
+      {
+         Serial.print(" HIGH ");
+         RGB_COLOR(RGB_GREEN);
+      }
+      else
+      {
+         Serial.print(" LOW ");
+         RGB_COLOR(RGB_RED);
+      }
+   }
+   Serial.println();
    delay(1000);
 }
