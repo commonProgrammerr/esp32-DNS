@@ -13,6 +13,7 @@
 #define RGB_GREEN 0, 255, 0
 #define RGB_YELLOW 255, 255, 0
 #define RGB_WHITE 255, 255, 255
+#define RGB_PINK 0xff, 0xC0, 0xCB
 
 extern Freenove_ESP32_WS2812 RGB;
 

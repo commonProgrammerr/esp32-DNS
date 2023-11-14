@@ -1,15 +1,6 @@
 #include "routineTest.h"
 // check expected routine
 
-Freenove_ESP32_WS2812 RGB = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
-byte tests_buttons[] = {buttonPin1, buttonPin2, buttonPin3, buttonPin4, flushButton};
-byte pinInDryContact[] = {inputPinDryContact1, inputPinDryContact2, inputPinDryContact3, inputPinDryContact4};
-byte pinInWetContact[] = {inputPinWetContact1, inputPinWetContact2, inputPinWetContact3, inputPinWetContact4};
-byte pump[] = {pump1, pump2, pump3, pump4};
-const int totalPumps = 4;
-const int totalButtons = 5;
-const int totalTests = 1 + totalPumps + totalButtons; //
-
 void toneBuzzer(byte bzChannel, int frequency, int bzDelay, int numberOfRepetitions)
 {
     for (int i = 0; i < numberOfRepetitions; i++)
@@ -20,6 +11,16 @@ void toneBuzzer(byte bzChannel, int frequency, int bzDelay, int numberOfRepetiti
         delay(bzDelay);
     }
 }
+
+byte pinInDryContact[] = {inputPinDryContact1, inputPinDryContact2, inputPinDryContact3, inputPinDryContact4};
+byte pinInWetContact[] = {inputPinWetContact1, inputPinWetContact2, inputPinWetContact3, inputPinWetContact4};
+byte pump[] = {pump1, pump2, pump3, pump4};
+Freenove_ESP32_WS2812 RGB = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
+
+byte tests_buttons[] = {flushButton, buttonPin1, buttonPin2, buttonPin3, buttonPin4};
+const int totalPumps = 4;
+const int totalButtons = 5;
+const int totalTests = 1 + totalPumps + totalButtons; //
 
 bool input_check(byte port, byte expect) { return digitalRead(port) == expect; }
 
@@ -54,9 +55,17 @@ bool testRTC()
 
     bool isEqual = getTimeStamp().substring(0, 16).equals("29-11-2021 20:32");
 
-    RGB_COLOR(isEqual ? RGB_GREEN : RGB_RED);
-    toneBuzzer(buzzerCh, 2000, isEqual ? 1000 : 15, isEqual ? 1 : 20);
-    delay(1500);
+    if (isEqual)
+    {
+        RGB_COLOR(RGB_PINK);
+        toneBuzzer(OK_SOUND);
+    }
+    else
+    {
+        RGB_COLOR(RGB_RED);
+        toneBuzzer(FAIL_SOUND);
+    }
+    delay(500);
     RGB_OFF();
     return isEqual;
 }
@@ -67,14 +76,13 @@ bool testButton(byte button, byte value)
     if (teste_result)
     {
         RGB_COLOR(RGB_GREEN);
+        toneBuzzer(OK_SOUND); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
     }
     else
     {
         RGB_COLOR(RGB_RED);
+        toneBuzzer(FAIL_SOUND); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
     }
-
-    toneBuzzer(buzzerCh, 2000, 15, 20); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
-    delay(1500);
     RGB_OFF();
 
     return teste_result;
@@ -87,9 +95,17 @@ bool testInOut(byte in_pin, byte out_pin)
     bool testResult = input_check(in_pin, HIGH);
     digitalWrite(out_pin, LOW);
 
-    if (!testResult)
-        toneBuzzer(buzzerCh, 2000, 15, 20); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
-
+    if (testResult)
+    {
+        RGB_COLOR(RGB_GREEN);
+        toneBuzzer(OK_SOUND); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
+    }
+    else
+    {
+        RGB_COLOR(RGB_RED);
+        toneBuzzer(FAIL_SOUND); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
+    }
+    delay(300);
     return testResult;
 }
 
@@ -110,6 +126,12 @@ void testRoutineInOut(bool testRoutineFlag)
             RGB_OFF();
             delay(250);
         }
+        RGB_COLOR(RGB_BLUE);
+        toneBuzzer(OK_SOUND);
+        delay(500);
+        RGB_OFF();
+        delay(1000);
+
         Serial.println("");
         Serial.print("Connected to WiFi network with IP Address: ");
         Serial.println(WiFi.localIP());
@@ -169,6 +191,7 @@ void testRoutineInOut(bool testRoutineFlag)
         Serial.println(test_log);
 
         HTTPClient http;
+        RGB_COLOR(RGB_BLUE);
         http.begin(serverTest);
         http.addHeader("test_number", String(totalTests));
         http.addHeader("pass_number", String(pass_count));
@@ -181,7 +204,6 @@ void testRoutineInOut(bool testRoutineFlag)
         yield();
         if (httpResponseCode == 200)
         {
-            RGB_COLOR(RGB_BLUE);
             String payload = http.getString();
             Serial.print("HTTP Response: ");
             // payload = getTimeStamp(); // remover essa linha assim que o servidor estiver respondendo a hr
@@ -199,22 +221,31 @@ void testRoutineInOut(bool testRoutineFlag)
             Serial.print("RTC-Server === "); //+"code"
             Serial.println(payload.substring(0, 16));
             Serial.print("HTTP "); //+"code"
-
-            if (!failCount)
-                toneBuzzer(buzzerCh, 1000, 50, 3);
+            toneBuzzer(OK_SOUND);  // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
         }
         else
         {
             RGB_COLOR(RGB_RED);
             Serial.println();
-            Serial.print("HTTP Error ");        //+"code"
-            toneBuzzer(buzzerCh, 2000, 15, 20); // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
+            Serial.print("HTTP Error "); //+"code"
+            toneBuzzer(FAIL_SOUND);      // toneBuzzer(byte buzzer, int frequency, int bzDelay, int numberOfRepetitions)
         }
         Serial.print("code: ");
         Serial.println(httpResponseCode);
         http.end();
-        delay(3000);
+        delay(1000);
         RGB_OFF();
+
+        if (!failCount)
+        {
+            toneBuzzer(OK_SOUND);
+            RGB_COLOR(RGB_GREEN);
+        }
+        else
+        {
+            toneBuzzer(FAIL_SOUND);
+            RGB_COLOR(RGB_RED);
+        }
 
         while (1)
             ;

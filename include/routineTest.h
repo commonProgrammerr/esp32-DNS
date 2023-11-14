@@ -45,6 +45,9 @@ extern byte pinInDryContact[];
 extern byte pinInWetContact[];
 extern byte pump[];
 
+#define OK_SOUND buzzerCh, 1000, 50, 3
+#define FAIL_SOUND buzzerCh, 2000, 15, 20
+
 // typedef struct
 // {
 //   bool (*test)(void *args);
